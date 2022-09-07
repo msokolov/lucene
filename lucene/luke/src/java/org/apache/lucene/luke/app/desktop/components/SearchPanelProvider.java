@@ -833,7 +833,6 @@ public final class SearchPanelProvider implements SearchTabOperator {
     public void closeIndex() {
       searchModel = null;
       toolsModel = null;
-
       queryStringTA.setText("");
       parsedQueryTA.setText("");
       parseBtn.setEnabled(false);

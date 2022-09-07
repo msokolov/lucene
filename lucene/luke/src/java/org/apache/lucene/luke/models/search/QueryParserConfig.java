@@ -33,6 +33,13 @@ public final class QueryParserConfig {
     OR
   }
 
+  /** query operators */
+  public enum HnswQualifier {
+    NONE,
+    ALSO,
+    ONLY
+  }
+
   private final boolean useClassicParser;
 
   private final boolean enablePositionIncrements;
@@ -63,6 +70,8 @@ public final class QueryParserConfig {
   // standard parser only configurations
   private final Map<String, Class<? extends Number>> typeMap;
 
+  private final HnswQualifier hnswQualifier;
+
   /** Builder for {@link QueryParserConfig} */
   public static class Builder {
     private boolean useClassicParser = true;
@@ -79,6 +88,7 @@ public final class QueryParserConfig {
     private boolean autoGeneratePhraseQueries = false;
     private boolean splitOnWhitespace = false;
     private Map<String, Class<? extends Number>> typeMap = new HashMap<>();
+    private HnswQualifier hnswQualifier;
 
     /** Builder for {@link QueryParserConfig} */
     public Builder useClassicParser(boolean value) {
@@ -151,6 +161,11 @@ public final class QueryParserConfig {
       return this;
     }
 
+    public Builder qualifyHnsw(HnswQualifier val) {
+      hnswQualifier = val;
+      return this;
+    }
+
     public QueryParserConfig build() {
       return new QueryParserConfig(this);
     }
@@ -172,6 +187,7 @@ public final class QueryParserConfig {
     this.autoGeneratePhraseQueries = builder.autoGeneratePhraseQueries;
     this.splitOnWhitespace = builder.splitOnWhitespace;
     this.typeMap = Map.copyOf(builder.typeMap);
+    this.hnswQualifier = builder.hnswQualifier;
   }
 
   public boolean isUseClassicParser() {
@@ -228,6 +244,10 @@ public final class QueryParserConfig {
 
   public Map<String, Class<? extends Number>> getTypeMap() {
     return typeMap;
+  }
+
+  public HnswQualifier hnswQualifier() {
+    return hnswQualifier;
   }
 
   @Override

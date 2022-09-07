@@ -14,19 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.demo.knn;
+package org.apache.lucene.luke.util;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
 import java.nio.FloatBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Pattern;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -78,9 +83,7 @@ public class KnnVectorDict implements Closeable {
     this.dimension = dimension;
   }
 
-  /**
-   * get a shallow copy for thread safe use
-   */
+  /** get a shallow copy for thread safe use */
   public KnnVectorDict copy() {
     return new KnnVectorDict(fst, vectors.clone(), dimension);
   }
@@ -97,20 +100,17 @@ public class KnnVectorDict implements Closeable {
    * @throws IllegalArgumentException if the output array is incorrectly sized
    * @throws IOException if there is a problem reading the dictionary
    */
-  public void get(BytesRef token, byte[] output) throws IOException {
-    if (output.length != dimension * Float.BYTES) {
+  public void get(BytesRef token, float[] output) throws IOException {
+    if (output.length != dimension) {
       throw new IllegalArgumentException(
-          "the output array must be of length "
-              + (dimension * Float.BYTES)
-              + ", got "
-              + output.length);
+          "the output array must be of length " + dimension + ", got " + output.length);
     }
     Long ord = Util.get(fst, token);
     if (ord == null) {
-      Arrays.fill(output, (byte) 0);
+      Arrays.fill(output, 0f);
     } else {
       vectors.seek(ord * dimension * Float.BYTES);
-      vectors.readBytes(output, 0, output.length);
+      vectors.readFloats(output, 0, output.length);
     }
   }
 
@@ -143,14 +143,13 @@ public class KnnVectorDict implements Closeable {
     new Builder().build(gloveInput, directory, dictName);
   }
 
-  /** build from a pair of corresponding files: textFile has one token per line and binaryVectorFile
-   * has the corresponding dim-dimensional vectors in LE float format.
-   */
-  public static void build(Path textFile, Path binaryVectorFile, int dim, Directory directory, String dictName)
+  // build from a pair of corresponding files: textFile has one token per line and binaryVectorFile
+  // has the corresponding dim-dimensional vectors in LE float format.
+  public static void build(
+      Path textFile, Path binaryVectorFile, int dim, Directory directory, String dictName)
       throws IOException {
     new Builder().build(textFile, binaryVectorFile, dim, directory, dictName);
   }
-
 
   private static class Builder {
     private static final Pattern SPACE_RE = Pattern.compile(" ");
@@ -163,15 +162,12 @@ public class KnnVectorDict implements Closeable {
     private long ordinal = 0;
     private int numFields;
 
-    void build(Path textFile, Path binaryFile, int dim, Directory directory, String dictName) throws IOException {
+    void build(Path textFile, Path binaryFile, int dim, Directory directory, String dictName)
+        throws IOException {
       System.out.print("building knn dict " + dictName + "...");
       System.out.flush();
-      try {
-        directory.deleteFile(dictName + ".bin");
-        directory.deleteFile(dictName + ".fst");
-      } catch (IOException e) {
-        // ignore; these may not exist
-      }
+      directory.deleteFile(dictName + ".bin");
+      directory.deleteFile(dictName + ".fst");
       try (BufferedReader in = Files.newBufferedReader(textFile);
           IndexOutput binOut = directory.createOutput(dictName + ".bin", IOContext.DEFAULT);
           IndexOutput fstOut = directory.createOutput(dictName + ".fst", IOContext.DEFAULT)) {
@@ -181,7 +177,8 @@ public class KnnVectorDict implements Closeable {
         }
         fstCompiler.compile().save(fstOut, fstOut);
         long binaryFileSize = Files.size(binaryFile);
-        assert binaryFileSize == ordinal * dim * Float.BYTES : "expected " + (ordinal * dim * Float.BYTES) + " got " + binaryFileSize;
+        assert binaryFileSize == ordinal * dim * Float.BYTES
+            : "expected " + (ordinal * dim * Float.BYTES) + " got " + binaryFileSize;
         try (FileChannel binIn = FileChannel.open(binaryFile)) {
           // write all the bytes to binOut
           ByteBuffer bin = binIn.map(FileChannel.MapMode.READ_ONLY, 0, binaryFileSize);
@@ -265,5 +262,37 @@ public class KnnVectorDict implements Closeable {
   /** Return the size of the dictionary in bytes */
   public long ramBytesUsed() {
     return fst.ramBytesUsed() + vectors.length();
+  }
+
+  public float[] computeTextVector(String text, Analyzer analyzer) throws IOException {
+    float[] dvec = new float[dimension];
+    float[] tvec =
+        new float[dimension]; // wasteful for single-token texts, but we only use this for ad-hoc
+    // searching
+    for (String token : tokenize(text, analyzer)) {
+      get(new BytesRef(token), tvec);
+      vectorAdd(dvec, tvec);
+    }
+    VectorUtil.l2normalize(dvec);
+    return dvec;
+  }
+
+  static List<String> tokenize(String expression, Analyzer analyzer) throws IOException {
+    List<String> tokens = new ArrayList<>();
+    try (TokenStream tokenStream = analyzer.tokenStream("body", expression)) {
+      CharTermAttribute term = tokenStream.addAttribute(CharTermAttribute.class);
+      tokenStream.reset();
+      while (tokenStream.incrementToken()) {
+        tokens.add(term.toString());
+      }
+    }
+    return tokens;
+  }
+
+  static void vectorAdd(float[] x, float[] y) {
+    assert x.length == y.length;
+    for (int i = 0; i < x.length; i++) {
+      x[i] += y[i];
+    }
   }
 }

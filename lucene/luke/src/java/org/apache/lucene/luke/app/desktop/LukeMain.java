@@ -86,7 +86,6 @@ public class LukeMain {
       lookAndFeelClassName = "javax.swing.plaf.metal.MetalLookAndFeel";
     }
     UIManager.setLookAndFeel(lookAndFeelClassName);
-
     GraphicsEnvironment genv = GraphicsEnvironment.getLocalGraphicsEnvironment();
     genv.registerFont(FontUtils.createElegantIconFont());
 
@@ -112,7 +111,6 @@ public class LukeMain {
             throw new RuntimeException(e);
           }
         });
-
     if (Boolean.FALSE.equals(guiThreadResult.take())) {
       Logger.getGlobal().log(Level.SEVERE, "Luke could not start.");
       Runtime.getRuntime().exit(1);

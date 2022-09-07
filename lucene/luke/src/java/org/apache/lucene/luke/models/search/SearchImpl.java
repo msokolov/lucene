@@ -37,9 +37,11 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StandardDirectoryReader;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.LukeModel;
 import org.apache.lucene.luke.models.util.IndexUtils;
+import org.apache.lucene.luke.util.KnnVectorDict;
 import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -48,8 +50,12 @@ import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
 import org.apache.lucene.queryparser.flexible.standard.config.PointsConfig;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.KnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -62,6 +68,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ArrayUtil;
 
 /** Default implementation of {@link Search} */
@@ -74,6 +81,8 @@ public final class SearchImpl extends LukeModel implements Search {
   private static final int DEFAULT_TOTAL_HITS_THRESHOLD = 1000;
 
   private final IndexSearcher searcher;
+
+  private final KnnVectorDict vectorDictionary;
 
   private int pageSize = DEFAULT_PAGE_SIZE;
 
@@ -99,6 +108,17 @@ public final class SearchImpl extends LukeModel implements Search {
   public SearchImpl(IndexReader reader) {
     super(reader);
     this.searcher = new IndexSearcher(reader);
+    KnnVectorDict vectorDictionary;
+    try {
+      Directory indexDir = ((StandardDirectoryReader) reader).getIndexCommit().getDirectory();
+      vectorDictionary = new KnnVectorDict(indexDir, "knn-dict");
+    } catch (IOException e) {
+      log.info(
+          "Failed to load vector dictionary knn-dict; knn matching will not be available: "
+              + e.getMessage());
+      vectorDictionary = null;
+    }
+    this.vectorDictionary = vectorDictionary;
   }
 
   @Override
@@ -149,6 +169,8 @@ public final class SearchImpl extends LukeModel implements Search {
         config.isUseClassicParser()
             ? parseByClassicParser(expression, defField, analyzer, config)
             : parseByStandardParser(expression, defField, analyzer, config);
+
+    query = combineWithKnnVectorQuery(query, config.hnswQualifier(), expression, analyzer);
 
     if (rewrite) {
       try {
@@ -245,6 +267,37 @@ public final class SearchImpl extends LukeModel implements Search {
     } catch (QueryNodeException e) {
       throw new LukeException(
           String.format(Locale.ENGLISH, "Failed to parse query expression: %s", expression), e);
+    }
+  }
+
+  private Query combineWithKnnVectorQuery(
+      Query query,
+      QueryParserConfig.HnswQualifier hnswQualifier,
+      String expression,
+      Analyzer analyzer) {
+    if (hnswQualifier == QueryParserConfig.HnswQualifier.NONE || vectorDictionary == null) {
+      return query;
+    } else {
+      Query knnVectorQuery = parseKnnVectorQuery(expression, analyzer);
+      if (hnswQualifier == QueryParserConfig.HnswQualifier.ONLY) {
+        return knnVectorQuery;
+      } else {
+        assert hnswQualifier == QueryParserConfig.HnswQualifier.ALSO;
+        return new BooleanQuery.Builder()
+            .add(query, Occur.SHOULD)
+            .add(knnVectorQuery, Occur.SHOULD)
+            .build();
+      }
+    }
+  }
+
+  private Query parseKnnVectorQuery(String expression, Analyzer analyzer) {
+    try {
+      float[] vector = vectorDictionary.computeTextVector(expression, analyzer);
+      return new BoostQuery(new KnnVectorQuery("text-vector", vector, 100), 10f);
+    } catch (IOException e) {
+      // should really not happen
+      throw new RuntimeException("failed to tokenize query", e);
     }
   }
 

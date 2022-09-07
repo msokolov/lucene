@@ -57,6 +57,10 @@ public final class QueryParserPaneProvider implements QueryParserTabOperator {
 
   private final JRadioButton classicRB = new JRadioButton();
 
+  private final JRadioButton hnswNone = new JRadioButton();
+  private final JRadioButton hnswAlso = new JRadioButton();
+  private final JRadioButton hnswOnly = new JRadioButton();
+
   private final JComboBox<String> dfCB = new JComboBox<>();
 
   private final JComboBox<String> defOpCombo =
@@ -105,6 +109,8 @@ public final class QueryParserPaneProvider implements QueryParserTabOperator {
 
     panel.add(initSelectParserPane());
     panel.add(new JSeparator(JSeparator.HORIZONTAL));
+    panel.add(initHnswPanel());
+    panel.add(new JSeparator(JSeparator.HORIZONTAL));
     panel.add(initParserSettingsPanel());
     panel.add(new JSeparator(JSeparator.HORIZONTAL));
     panel.add(initPhraseQuerySettingsPanel());
@@ -140,6 +146,32 @@ public final class QueryParserPaneProvider implements QueryParserTabOperator {
 
     panel.add(standardRB);
     panel.add(classicRB);
+
+    return panel;
+  }
+
+  private JPanel initHnswPanel() {
+    JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+    panel.setOpaque(false);
+
+    hnswNone.setText("No HNSW");
+    hnswNone.setSelected(true);
+    hnswNone.setOpaque(false);
+
+    hnswAlso.setText("Also HNSW");
+    hnswAlso.setOpaque(false);
+
+    hnswOnly.setText("Only HNSW");
+    hnswOnly.setOpaque(false);
+
+    ButtonGroup hnswGroup = new ButtonGroup();
+    hnswGroup.add(hnswNone);
+    hnswGroup.add(hnswAlso);
+    hnswGroup.add(hnswOnly);
+
+    panel.add(hnswNone);
+    panel.add(hnswAlso);
+    panel.add(hnswOnly);
 
     return panel;
   }
@@ -409,6 +441,14 @@ public final class QueryParserPaneProvider implements QueryParserTabOperator {
       }
     }
 
+    QueryParserConfig.HnswQualifier hnswQualifier;
+    if (hnswAlso.isSelected()) {
+      hnswQualifier = QueryParserConfig.HnswQualifier.ALSO;
+    } else if (hnswOnly.isSelected()) {
+      hnswQualifier = QueryParserConfig.HnswQualifier.ONLY;
+    } else {
+      hnswQualifier = QueryParserConfig.HnswQualifier.NONE;
+    }
     return new QueryParserConfig.Builder()
         .useClassicParser(classicRB.isSelected())
         .defaultOperator(QueryParserConfig.Operator.valueOf((String) defOpCombo.getSelectedItem()))
@@ -424,6 +464,7 @@ public final class QueryParserPaneProvider implements QueryParserTabOperator {
         .locale(new Locale(locationTF.getText()))
         .timeZone(TimeZone.getTimeZone(timezoneTF.getText()))
         .typeMap(typeMap)
+        .qualifyHnsw(hnswQualifier)
         .build();
   }
 
