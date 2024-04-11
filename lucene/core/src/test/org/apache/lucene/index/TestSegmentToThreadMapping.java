@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -291,4 +292,63 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
 
     assertTrue(resultSlices.length > 0);
   }
+
+  private LeafReaderContext dummyContext(int ord, int docBase, int maxDoc) {
+    return new LeafReaderContext(null, dummyIndexReader(maxDoc), ord, docBase, ord, docBase);
+  }
+
+  public void testFixedSliceSupplier() {
+    List<LeafReaderContext> contexts = new ArrayList<>();
+    // 100 docs total
+    contexts.add(dummyContext(0, 0, 10));
+    contexts.add(dummyContext(1, 10, 10));
+    contexts.add(dummyContext(2, 20, 50));
+    contexts.add(dummyContext(3, 70, 30));
+    
+    IndexSearcher.LeafSlice[] slices5 = new IndexSearcher.FixedSizeSliceSupplier(contexts, 5).get();
+    int [][][] expected = {
+            {{0, 0, 10}, {1, 0, 10}},
+            {{2, 0, 20}},
+            {{2, 20, 40}},
+            {{2, 40, 50}, {3, 0, 10}},
+            {{3, 10, 30}}
+    };
+    assertLeafSlices(expected, slices5);
+
+    IndexSearcher.LeafSlice[] slices7 = new IndexSearcher.FixedSizeSliceSupplier(contexts, 7).get();
+    int [][][] expected7 = {
+            {{0, 0, 10}, {1, 0, 4}},
+            {{1, 4, 10}, {2, 0, 8}},
+            {{2, 8, 22}},
+            {{2, 22, 36}},
+            {{2, 36, 50}},
+            {{3, 0, 14}},
+            {{3, 14, 30}}
+    };
+    assertLeafSlices(expected7, slices7);
+  }
+
+  public void testFixedSliceSmallIndex() {
+    List<LeafReaderContext> contexts = new ArrayList<>();
+    // 1 doc
+    contexts.add(dummyContext(0, 0, 1));
+    IndexSearcher.LeafSlice[] slices5 = new IndexSearcher.FixedSizeSliceSupplier(contexts, 5).get();
+    int [][][] expected = {
+            {{0, 0, 1}}
+    };
+    assertLeafSlices(expected, slices5);
+  }
+
+  private void assertLeafSlices(int[][][] expected, IndexSearcher.LeafSlice[] slices) {
+    assertEquals(expected.length, slices.length);
+    for (int i = 0; i < expected.length; i++) {
+      assertEquals(expected[i].length, slices[i].leaves.length);
+      for (int j = 0; j < expected[i].length; j++) {
+        assertEquals("ord slice " + i + " leaf " + j, expected[i][j][0], slices[i].leaves[j].ord);
+        assertEquals("start slice " + i + " leaf " + j, expected[i][j][1], slices[i].leaves[j].intervalStart);
+        assertEquals("end slice " + i + " leaf " + j, expected[i][j][2], slices[i].leaves[j].intervalEnd);
+      }
+    }
+  }
+
 }

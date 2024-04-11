@@ -152,7 +152,8 @@ public class AssertingScorer extends Scorer {
 
       @Override
       public int docID() {
-        assert AssertingScorer.this.in.docID() == in.docID();
+        assert AssertingScorer.this.in.docID() == in.docID() : in + " docID=" + in.docID() +
+                " while " + AssertingScorer.this.in + " has " + AssertingScorer.this.in.docID();
         return in.docID();
       }
 

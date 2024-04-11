@@ -82,7 +82,7 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
       // openDelFileCount=" + dir.openDeleteFileCount());
 
       if (r.numDocs() > 0) {
-        fixedSearcher = new IndexSearcher(r, es);
+        fixedSearcher = new IndexSearcher(r, es, null);
         smokeTestSearcher(fixedSearcher);
         runSearchThreads(100);
       }

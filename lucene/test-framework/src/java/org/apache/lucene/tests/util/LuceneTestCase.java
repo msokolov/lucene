@@ -21,6 +21,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+import static org.apache.lucene.search.IndexSearcher.FixedSizeSliceSupplier.getLeafSlices;
 
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
@@ -1958,29 +1959,39 @@ public abstract class LuceneTestCase extends Assert {
       IndexSearcher ret;
       int maxDocPerSlice = random.nextBoolean() ? 1 : 1 + random.nextInt(1000);
       int maxSegmentsPerSlice = random.nextBoolean() ? 1 : 1 + random.nextInt(10);
+      Integer fixedSliceCount = ex != null && random.nextBoolean() ? 2 + random.nextInt(10) : null;
       if (wrapWithAssertions) {
         if (random.nextBoolean()) {
           ret =
-              new AssertingIndexSearcher(random, r, ex) {
+              new AssertingIndexSearcher(random, r, ex, fixedSliceCount) {
                 @Override
                 protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+                  if (fixedSliceCount != null) {
+                    return getLeafSlices(leaves, fixedSliceCount);
+                  }
                   return slices(leaves, maxDocPerSlice, maxSegmentsPerSlice);
                 }
               };
         } else {
           ret =
-              new AssertingIndexSearcher(random, r.getContext(), ex) {
+              new AssertingIndexSearcher(random, r.getContext(), ex, fixedSliceCount) {
                 @Override
                 protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+                  if (fixedSliceCount != null) {
+                    return getLeafSlices(leaves, fixedSliceCount);
+                  }
                   return slices(leaves, maxDocPerSlice, maxSegmentsPerSlice);
                 }
               };
         }
       } else {
         ret =
-            new IndexSearcher(r, ex) {
+            new IndexSearcher(r, ex, fixedSliceCount) {
               @Override
               protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+                if (fixedSliceCount != null) {
+                  return getLeafSlices(leaves, fixedSliceCount);
+                }
                 return slices(leaves, maxDocPerSlice, maxSegmentsPerSlice);
               }
             };
