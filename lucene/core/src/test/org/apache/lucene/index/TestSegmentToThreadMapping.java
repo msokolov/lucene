@@ -317,13 +317,13 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
 
     IndexSearcher.LeafSlice[] slices7 = new IndexSearcher.FixedSizeSliceSupplier(contexts, 7).get();
     int [][][] expected7 = {
-            {{0, 0, 10}, {1, 0, 4}},
-            {{1, 4, 10}, {2, 0, 8}},
-            {{2, 8, 22}},
-            {{2, 22, 36}},
-            {{2, 36, 50}},
-            {{3, 0, 14}},
-            {{3, 14, 30}}
+            {{0, 0, 10}, {1, 0, 5}},
+            {{1, 5, 10}, {2, 0, 10}},
+            {{2, 10, 25}},
+            {{2, 25, 40}},
+            {{2, 40, 50}, {3, 0, 5}},
+            {{3, 5, 20}},
+            {{3, 20, 30git a}}
     };
     assertLeafSlices(expected7, slices7);
   }
