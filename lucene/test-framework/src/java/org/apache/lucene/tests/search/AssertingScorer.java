@@ -169,7 +169,7 @@ public class AssertingScorer extends Scorer {
           state = IteratorState.ITERATING;
         }
         assert in.docID() == nextDoc;
-        assert AssertingScorer.this.in.docID() == in.docID();
+        assert AssertingScorer.this.in.docID() == in.docID(): AssertingScorer.this.in.docID()  + "!=" + in.docID();
         return doc = nextDoc;
       }
 

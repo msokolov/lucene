@@ -36,7 +36,7 @@ class IntervalQuery extends Query {
           }
         };
       }
-
+      
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         Scorer inScorer = inWeight.scorer(context);
@@ -62,7 +62,7 @@ class IntervalQuery extends Query {
 
           @Override
           public int docID() {
-            return inScorer.docID();
+            return iterator.docID();
           }
 
           @Override

@@ -117,7 +117,7 @@ public class TestPrefixQuery extends LuceneTestCase {
           count++;
         }
       }
-      assertEquals(count, s.count(q));
+      assertEquals("iter=" + iter, count, s.count(q));
     }
     r.close();
     w.close();
