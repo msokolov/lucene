@@ -14,6 +14,16 @@ class IntervalQuery extends Query {
   }
 
   @Override
+  public Query rewrite(IndexSearcher searcher) throws IOException {
+    Query rewritten = delegate.rewrite(searcher);
+    if (rewritten != delegate) {
+      return new IntervalQuery(rewritten);
+    } else {
+      return this;
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     Weight inWeight = delegate.createWeight(searcher, scoreMode, boost);
     return new FilterWeight(inWeight) {
@@ -36,7 +46,7 @@ class IntervalQuery extends Query {
           }
         };
       }
-      
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         Scorer inScorer = inWeight.scorer(context);

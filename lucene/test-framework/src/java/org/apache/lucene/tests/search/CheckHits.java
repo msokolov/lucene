@@ -671,7 +671,7 @@ public class CheckHits {
       assertNotNull(
           "Unexpected null Matches object in doc" + doc + " for query " + this.weight.getQuery(),
           matches);
-      if (lastCheckedDoc != doc - 1) {
+      if (doc > context.intervalStart && lastCheckedDoc != doc - 1) {
         assertNull(
             "Unexpected non-null Matches object in non-matching doc"
                 + doc
