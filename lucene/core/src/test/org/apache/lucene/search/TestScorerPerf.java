@@ -224,7 +224,9 @@ public class TestScorerPerf extends LuceneTestCase {
           s.search(bq.build(), new CountingHitCollectorManager(validate, result));
       ret += hc.getSum();
 
-      if (validate) assertEquals(result.cardinality(), hc.getCount());
+      if (validate) {
+        assertEquals("iter=" + i, result.cardinality(), hc.getCount());
+      }
       // System.out.println(hc.getCount());
     }
 
@@ -364,7 +366,9 @@ public class TestScorerPerf extends LuceneTestCase {
       iw.close();
 
       try (DirectoryReader r = DirectoryReader.open(d)) {
-        IndexSearcher s = newSearcher(r);
+        // don't run with threads b/c IntervalQuery will limit results by index maxDoc,
+        // but this test just uses its own BitSets for matching
+        IndexSearcher s = newSearcher(r, true, random().nextBoolean(), false);
         s.setQueryCache(null);
 
         FixedBitSet[] sets = randBitSets(atLeast(1000), atLeast(10));

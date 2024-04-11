@@ -121,7 +121,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
   public void testWrapped2Times() throws Exception {
     Directory directory = null;
     IndexReader reader = null;
-    IndexSearcher searcher = null;
+    IndexSearcher searcher;
     try {
       directory = newDirectory();
       RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
@@ -135,7 +135,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       writer.close();
       // we don't wrap with AssertingIndexSearcher in order to have the original scorer in
       // setScorer.
-      searcher = newSearcher(reader, true, false);
+      searcher = newSearcher(reader, true, false, false);
       searcher.setQueryCache(null); // to assert on scorer impl
 
       final BoostQuery csq1 =

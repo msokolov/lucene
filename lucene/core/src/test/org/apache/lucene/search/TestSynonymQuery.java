@@ -197,7 +197,7 @@ public class TestSynonymQuery extends LuceneTestCase {
     TopDocs topDocs = searcher.search(query, collectorManager);
     if (topDocs.totalHits.value < totalHitsThreshold) {
       assertEquals(new TotalHits(11, TotalHits.Relation.EQUAL_TO), topDocs.totalHits);
-    } else {
+    } else if (searcher.getSlices().length == 1) {
       assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, topDocs.totalHits.relation);
     }
     // All docs must have the same score

@@ -727,7 +727,7 @@ public class IndexSearcher {
       throws IOException {
     final C firstCollector = collectorManager.newCollector();
     if (fixedSliceCount != null) {
-      // rap the query in an IntervalQuery - this is a pass-through query with a
+      // wrap the query in an IntervalQuery - this is a pass-through query with a
       // delegate that creates Scorers that limit iteration to the interval defined in the LeafReaderContext
       query = new IntervalQuery(query);
     }

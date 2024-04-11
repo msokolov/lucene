@@ -328,7 +328,13 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
 
     private static void summarizeScorer(
         final StringBuilder builder, final Scorable scorer, final int indent) throws IOException {
-      builder.append(scorer.getClass().getSimpleName());
+      String scorerName = scorer.getClass().getSimpleName();
+      if (scorerName.isBlank() && scorer.getChildren().size() == 1) {
+        // anonymous class, does it have a single child? If so bypass it.
+        summarizeScorer(builder, scorer.getChildren().iterator().next().child, indent);
+        return;
+      }
+      builder.append(scorerName);
       if (scorer instanceof TermScorer) {
         TermQuery termQuery = (TermQuery) ((Scorer) scorer).getWeight().getQuery();
         builder

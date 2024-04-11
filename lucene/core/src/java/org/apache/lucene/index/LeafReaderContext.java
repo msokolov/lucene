@@ -37,7 +37,7 @@ public final class LeafReaderContext extends IndexReaderContext {
 
   /** Creates a new {@link LeafReaderContext} */
   LeafReaderContext(
-          CompositeReaderContext parent,
+          IndexReaderContext parent,
           LeafReader reader,
           int ord,
           int docBase,
@@ -56,7 +56,7 @@ public final class LeafReaderContext extends IndexReaderContext {
 
   /** Creates a new {@link LeafReaderContext} whose doc interval spans the entire leaf */
   LeafReaderContext(
-      CompositeReaderContext parent,
+      IndexReaderContext parent,
       LeafReader reader,
       int ord,
       int docBase,
@@ -92,6 +92,7 @@ public final class LeafReaderContext extends IndexReaderContext {
     assert intervalStart >= 0;
     assert intervalEnd > intervalStart && intervalEnd <= reader.maxDoc():
             "[" + intervalStart + "," + intervalEnd + "] maxdoc=" + reader.maxDoc();
+    LeafReaderContext parent = this;
     return new LeafReaderContext(parent, reader, ord, docBase, ord, docBase, intervalStart, intervalEnd);
   }
 

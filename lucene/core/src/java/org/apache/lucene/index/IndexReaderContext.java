@@ -24,7 +24,7 @@ import java.util.List;
  */
 public abstract sealed class IndexReaderContext permits CompositeReaderContext, LeafReaderContext {
   /** The reader context for this reader's immediate parent, or null if none */
-  public final CompositeReaderContext parent;
+  public final IndexReaderContext parent;
 
   /**
    * {@code true} if this context struct represents the top level reader within the hierarchical
@@ -43,7 +43,7 @@ public abstract sealed class IndexReaderContext permits CompositeReaderContext, 
   // identity object, even after the index reader has been closed
   final Object identity = new Object();
 
-  IndexReaderContext(CompositeReaderContext parent, int ordInParent, int docBaseInParent) {
+  IndexReaderContext(IndexReaderContext parent, int ordInParent, int docBaseInParent) {
     this.parent = parent;
     this.docBaseInParent = docBaseInParent;
     this.ordInParent = ordInParent;

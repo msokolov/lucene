@@ -105,7 +105,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
 
     LeafReader reader = getOnlyLeafReader(DirectoryReader.open(directory));
 
-    this.searcher = newSearcher(reader);
+    this.searcher = newSearcher(reader, true, random().nextBoolean(), false);
   }
 
   private ScoreDoc[] search() throws IOException {

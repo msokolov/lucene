@@ -116,7 +116,7 @@ public class TermQuery extends Query {
     @Override
     public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       assert termStates == null || termStates.wasBuiltFor(ReaderUtil.getTopLevelContext(context))
-          : "The top-reader used to create Weight is not the same as the current reader's top-reader ("
+              : "The top-reader used to create Weight is not the same as the current reader's top-reader ("
               + ReaderUtil.getTopLevelContext(context);
 
       final TermsEnum termsEnum = getTermsEnum(context);

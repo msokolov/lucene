@@ -3,6 +3,8 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.LeafReaderContext;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
 
 class IntervalQuery extends Query {
@@ -122,6 +124,15 @@ class IntervalQuery extends Query {
           @Override
           public float getMaxScore(int upTo) throws IOException {
             return inScorer.getMaxScore(Math.min(upTo, intervalEnd));
+          }
+
+          /**
+           * Returns child sub-scorers positioned on the current document
+           *
+           * @lucene.experimental
+           */
+          public Collection<ChildScorable> getChildren() throws IOException {
+            return Collections.singleton(new ChildScorable(inScorer, "MUST"));
           }
         };
       }
