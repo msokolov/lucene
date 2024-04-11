@@ -323,7 +323,7 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
             {{2, 25, 40}},
             {{2, 40, 50}, {3, 0, 5}},
             {{3, 5, 20}},
-            {{3, 20, 30git a}}
+            {{3, 20, 30}}
     };
     assertLeafSlices(expected7, slices7);
   }
