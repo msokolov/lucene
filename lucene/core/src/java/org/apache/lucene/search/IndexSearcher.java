@@ -443,12 +443,29 @@ public class IndexSearcher {
           // System.out.println("intervalStart=" + intervalStart + " nextSliceStart=" +
           // nextSliceStart);
           LeafReaderContext leaf = leafContexts.get(curLeaf);
-          int leafMaxDoc = leaf.docBase + leaf.reader().maxDoc();
+          int leafSize = leaf.reader().maxDoc();
+          int leafMaxDoc = leaf.docBase + leafSize;
           int intervalEnd;
           if (i == numSlice - 1 && maxDoc - intervalStart < 2 * sliceDocCount) {
+            // end of all the slices and leaves
             intervalEnd = leafMaxDoc;
+          } else if ((leafMaxDoc - nextSliceStart) < leafSize * .15f &&
+                  (leafMaxDoc - nextSliceStart) < sliceDocCount * .15f
+          ) {
+            // if we are going to cut off all but a small tail of a segment, include the whole thing,
+            // allowing this slice to be oversized
+            intervalEnd = leafMaxDoc;
+          } else if (i < numSlice - 1 &&
+                  (nextSliceStart - intervalStart) < leafSize * .15f &&
+                  (nextSliceStart - intervalStart) < sliceDocCount * .15f
+          ) {
+            // if this is not the last slice, and it looks like we are going to slice off an
+            // itty-bitty piece (less than 15%) of a segment, and the piece is also small compared
+            // to the slice size, then produce a short slice; we'll make
+            // it up in the next one
+            break;
           } else {
-            intervalEnd = Math.min(leafMaxDoc, nextSliceStart);
+              intervalEnd = Math.min(leafMaxDoc, nextSliceStart);
           }
           sliceContexts.add(
               leaf.createSubLeaf(intervalStart - leaf.docBase, intervalEnd - leaf.docBase));

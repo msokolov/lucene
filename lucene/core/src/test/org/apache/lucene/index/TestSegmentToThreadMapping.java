@@ -327,6 +327,34 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     assertLeafSlices(expected7, slices7);
   }
 
+  public void testFixedSliceHeuristic() {
+    // check the flexibility in the slice bounds that tries to avoid cutting off small pieces of segments
+    List<LeafReaderContext> contexts = new ArrayList<>();
+    // 100 docs total
+    contexts.add(dummyContext(0, 0, 10));
+    contexts.add(dummyContext(1, 10, 10));
+    contexts.add(dummyContext(2, 20, 50));
+    contexts.add(dummyContext(3, 70, 30));
+
+    IndexSearcher.LeafSlice[] slices12 = IndexSearcher.FixedSizeSliceSupplier.getLeafSlices(contexts, 12);
+    // 12 slices into 100 will make slices of size 9, but this would leaf a slice with 10% (1 doc) so the slice grows
+    // to accomodate that entire segment
+    int[][][] expected12 = {
+            {{0, 0, 10}},
+            {{1, 0, 8}},
+            {{1, 8, 10}, {2, 0, 7}},
+            {{2, 7, 16}},
+            {{2, 16, 25}},
+            {{2, 25, 34}},
+            {{2, 34, 43}},
+            {{2, 43, 50}, {3, 0, 2}},
+            {{3, 2, 11}},
+            {{3, 11, 20}},
+            {{3, 20, 30}}
+    };
+    assertLeafSlices(expected12, slices12);
+  }
+
   public void testFixedSliceSmallIndex() {
     List<LeafReaderContext> contexts = new ArrayList<>();
     // 1 doc
