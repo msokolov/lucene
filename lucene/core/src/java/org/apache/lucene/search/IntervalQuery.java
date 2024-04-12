@@ -62,84 +62,127 @@ class IntervalQuery extends Query {
       private Scorer wrapScorer(Scorer inScorer, LeafReaderContext context) {
         int intervalStart = context.intervalStart;
         int intervalEnd = context.intervalEnd;
-        BoundedDocIdSetIterator iterator;
-        final DocIdSetIterator inIterator = inScorer.iterator();
-        if (inIterator == null) {
-          iterator = null;
+        TwoPhaseIterator inTwoPhase = inScorer.twoPhaseIterator();
+        if (inTwoPhase != null) {
+          return new TwoPhaseScorer(inScorer, inTwoPhase, intervalStart, intervalEnd);
         } else {
-          iterator = new BoundedDocIdSetIterator(intervalStart, intervalEnd, inIterator);
+          return new IntervalScorer(inScorer, intervalStart, intervalEnd);
+        }
+      }
+
+      private class TwoPhaseScorer extends Scorer {
+        private final Scorer inScorer;
+        private final TwoPhaseIterator twoPhase;
+        private final DocIdSetIterator iterator;
+        private final int intervalEnd;
+
+        TwoPhaseScorer(Scorer scorer, TwoPhaseIterator twoPhase, int intervalStart, int intervalEnd) {
+          super(scorer.weight);
+          DocIdSetIterator approx = new BoundedDocIdSetIterator(intervalStart, intervalEnd, twoPhase.approximation());
+          this.twoPhase = createTwoPhase(twoPhase, approx);
+          this.iterator = TwoPhaseIterator.asDocIdSetIterator(this.twoPhase);
+          this.inScorer = scorer;
+          this.intervalEnd = intervalEnd;
         }
 
-        return new Scorer(this) {
-
-          @Override
-          public int docID() {
-            return iterator.docID();
-          }
-
-          @Override
-          public DocIdSetIterator iterator() {
-            return iterator;
-          }
-
-          @Override
-          public float score() throws IOException {
-            return inScorer.score();
-          }
-
-          // nocommit: override twoPhaseIterator
-          // this is broken, probably asDocIdSetIterator is not getting the approximation
-          /*public TwoPhaseIterator twoPhaseIterator() {
-            TwoPhaseIterator inTwoPhase = inScorer.twoPhaseIterator();
-            if (inTwoPhase == null) {
-              return null;
+        private static TwoPhaseIterator createTwoPhase(TwoPhaseIterator twoPhase, DocIdSetIterator boundedApproximation) {
+          return new TwoPhaseIterator(boundedApproximation) {
+            @Override
+            public boolean matches() throws IOException {
+              return twoPhase.matches();
             }
-            // FIXME - is this asDISI correct?
-            return new TwoPhaseIterator(new BoundedDocIdSetIterator(intervalStart, intervalEnd,
-                    TwoPhaseIterator.asDocIdSetIterator(inTwoPhase))) {
-              @Override
-              public boolean matches() throws IOException {
-                //System.out.println("matches " + docID() + " [" + intervalStart + "," + intervalEnd + ")");
-                if (docID() >= intervalEnd) {
-                  return false;
-                }
-                return inTwoPhase.matches();
-              }
 
-              @Override
-              public float matchCost() {
-                return inTwoPhase.matchCost();
-              }
-            };
-          }*/
-
-          public int advanceShallow(int target) throws IOException {
-            if (target >= intervalEnd) {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            } else {
-              return inScorer.advanceShallow(target);
+            @Override
+            public float matchCost() {
+              return twoPhase.matchCost();
             }
-          }
+          };
+        }
 
-          @Override
-          public float getMaxScore(int upTo) throws IOException {
-            return inScorer.getMaxScore(Math.min(upTo, intervalEnd));
-          }
+        @Override
+        public int docID() {
+          return iterator.docID();
+        }
 
-          /**
-           * Returns child sub-scorers positioned on the current document
-           *
-           * @lucene.experimental
-           */
-          public Collection<ChildScorable> getChildren() throws IOException {
-            return Collections.singleton(new ChildScorable(inScorer, "MUST"));
-          }
-        };
+        @Override
+        public DocIdSetIterator iterator() {
+          return iterator;
+        }
+
+        @Override
+        public float score() throws IOException {
+          return inScorer.score();
+        }
+
+        @Override
+        public TwoPhaseIterator twoPhaseIterator() {
+          return twoPhase;
+        }
+
+        @Override
+        public float getMaxScore(int upTo) throws IOException {
+          return inScorer.getMaxScore(Math.min(upTo, intervalEnd));
+        }
+
+        @Override
+        public Collection<ChildScorable> getChildren() throws IOException {
+          return Collections.singleton(new ChildScorable(inScorer, "MUST"));
+        }
       }
+
+      private class IntervalScorer extends Scorer {
+        private final Scorer inScorer;
+        private final DocIdSetIterator iterator;
+        private final int intervalEnd;
+
+        IntervalScorer(Scorer inScorer, int intervalStart, int intervalEnd) {
+          super(inScorer.weight);
+          this.iterator = new BoundedDocIdSetIterator(intervalStart, intervalEnd, inScorer.iterator());
+          this.inScorer = inScorer;
+          this.intervalEnd = intervalEnd;
+        }
+
+        @Override
+        public int docID() {
+          return iterator.docID();
+        }
+
+        @Override
+        public DocIdSetIterator iterator() {
+          return iterator;
+        }
+
+        @Override
+        public float score() throws IOException {
+          return inScorer.score();
+        }
+
+        public TwoPhaseIterator twoPhaseIterator() {
+          return null;
+        }
+
+        public int advanceShallow(int target) throws IOException {
+          if (target >= intervalEnd) {
+            return DocIdSetIterator.NO_MORE_DOCS;
+          } else {
+            return inScorer.advanceShallow(target);
+          }
+        }
+
+        @Override
+        public float getMaxScore(int upTo) throws IOException {
+          return inScorer.getMaxScore(Math.min(upTo, intervalEnd));
+        }
+
+        @Override
+        public Collection<ChildScorable> getChildren() throws IOException {
+          return Collections.singleton(new ChildScorable(inScorer, "MUST"));
+        }
+      };
 
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
-        // nocommit how should this interact with the cache? does the ctx key need to take into account the slicing?
+        // nocommit we must disable the cache until we can use sub-leaves as cache keys
         return false;
       }
     };
