@@ -1,9 +1,9 @@
 package org.apache.lucene.search;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.tests.search.RandomApproximationQuery;
 import org.apache.lucene.tests.search.SearchEquivalenceTestBase;
-import org.apache.lucene.search.BooleanClause.Occur;
 
 public class TestIntervalQuery extends SearchEquivalenceTestBase {
 

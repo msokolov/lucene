@@ -27,9 +27,7 @@ public final class LeafReaderContext extends IndexReaderContext {
   /** The reader's absolute doc base */
   public final int docBase;
 
-  /**
-   * The range of docids spanned by this context; left-inclusive, right-exclusive.
-   */
+  /** The range of docids spanned by this context; left-inclusive, right-exclusive. */
   public final int intervalStart, intervalEnd;
 
   private final LeafReader reader;
@@ -37,14 +35,14 @@ public final class LeafReaderContext extends IndexReaderContext {
 
   /** Creates a new {@link LeafReaderContext} */
   LeafReaderContext(
-          IndexReaderContext parent,
-          LeafReader reader,
-          int ord,
-          int docBase,
-          int leafOrd,
-          int leafDocBase,
-          int intervalStart,
-          int intervalEnd) {
+      IndexReaderContext parent,
+      LeafReader reader,
+      int ord,
+      int docBase,
+      int leafOrd,
+      int leafDocBase,
+      int intervalStart,
+      int intervalEnd) {
     super(parent, ord, docBase);
     this.ord = leafOrd;
     this.docBase = leafDocBase;
@@ -62,7 +60,15 @@ public final class LeafReaderContext extends IndexReaderContext {
       int docBase,
       int leafOrd,
       int leafDocBase) {
-    this(parent, reader, ord, docBase, leafOrd, leafDocBase, 0, parent == null ? 0 : reader.maxDoc());
+    this(
+        parent,
+        reader,
+        ord,
+        docBase,
+        leafOrd,
+        leafDocBase,
+        0,
+        parent == null ? 0 : reader.maxDoc());
   }
 
   LeafReaderContext(LeafReader leafReader) {
@@ -90,10 +96,11 @@ public final class LeafReaderContext extends IndexReaderContext {
 
   public LeafReaderContext createSubLeaf(int intervalStart, int intervalEnd) {
     assert intervalStart >= 0;
-    assert intervalEnd > intervalStart && intervalEnd <= reader.maxDoc():
-            "[" + intervalStart + "," + intervalEnd + "] maxdoc=" + reader.maxDoc();
+    assert intervalEnd > intervalStart && intervalEnd <= reader.maxDoc()
+        : "[" + intervalStart + "," + intervalEnd + "] maxdoc=" + reader.maxDoc();
     LeafReaderContext parent = this;
-    return new LeafReaderContext(parent, reader, ord, docBase, ord, docBase, intervalStart, intervalEnd);
+    return new LeafReaderContext(
+        parent, reader, ord, docBase, ord, docBase, intervalStart, intervalEnd);
   }
 
   @Override

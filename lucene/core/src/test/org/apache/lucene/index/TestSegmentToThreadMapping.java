@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -304,26 +303,26 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     contexts.add(dummyContext(1, 10, 10));
     contexts.add(dummyContext(2, 20, 50));
     contexts.add(dummyContext(3, 70, 30));
-    
+
     IndexSearcher.LeafSlice[] slices5 = new IndexSearcher.FixedSizeSliceSupplier(contexts, 5).get();
-    int [][][] expected = {
-            {{0, 0, 10}, {1, 0, 10}},
-            {{2, 0, 20}},
-            {{2, 20, 40}},
-            {{2, 40, 50}, {3, 0, 10}},
-            {{3, 10, 30}}
+    int[][][] expected = {
+      {{0, 0, 10}, {1, 0, 10}},
+      {{2, 0, 20}},
+      {{2, 20, 40}},
+      {{2, 40, 50}, {3, 0, 10}},
+      {{3, 10, 30}}
     };
     assertLeafSlices(expected, slices5);
 
     IndexSearcher.LeafSlice[] slices7 = new IndexSearcher.FixedSizeSliceSupplier(contexts, 7).get();
-    int [][][] expected7 = {
-            {{0, 0, 10}, {1, 0, 5}},
-            {{1, 5, 10}, {2, 0, 10}},
-            {{2, 10, 25}},
-            {{2, 25, 40}},
-            {{2, 40, 50}, {3, 0, 5}},
-            {{3, 5, 20}},
-            {{3, 20, 30}}
+    int[][][] expected7 = {
+      {{0, 0, 10}, {1, 0, 5}},
+      {{1, 5, 10}, {2, 0, 10}},
+      {{2, 10, 25}},
+      {{2, 25, 40}},
+      {{2, 40, 50}, {3, 0, 5}},
+      {{3, 5, 20}},
+      {{3, 20, 30}}
     };
     assertLeafSlices(expected7, slices7);
   }
@@ -333,9 +332,7 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     // 1 doc
     contexts.add(dummyContext(0, 0, 1));
     IndexSearcher.LeafSlice[] slices5 = new IndexSearcher.FixedSizeSliceSupplier(contexts, 5).get();
-    int [][][] expected = {
-            {{0, 0, 1}}
-    };
+    int[][][] expected = {{{0, 0, 1}}};
     assertLeafSlices(expected, slices5);
   }
 
@@ -345,10 +342,13 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
       assertEquals(expected[i].length, slices[i].leaves.length);
       for (int j = 0; j < expected[i].length; j++) {
         assertEquals("ord slice " + i + " leaf " + j, expected[i][j][0], slices[i].leaves[j].ord);
-        assertEquals("start slice " + i + " leaf " + j, expected[i][j][1], slices[i].leaves[j].intervalStart);
-        assertEquals("end slice " + i + " leaf " + j, expected[i][j][2], slices[i].leaves[j].intervalEnd);
+        assertEquals(
+            "start slice " + i + " leaf " + j,
+            expected[i][j][1],
+            slices[i].leaves[j].intervalStart);
+        assertEquals(
+            "end slice " + i + " leaf " + j, expected[i][j][2], slices[i].leaves[j].intervalEnd);
       }
     }
   }
-
 }

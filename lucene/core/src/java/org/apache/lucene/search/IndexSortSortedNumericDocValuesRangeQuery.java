@@ -656,5 +656,4 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
       return new IteratorAndCount(new BoundedDocIdSetIterator(minDoc, maxDoc, delegate), -1);
     }
   }
-
 }

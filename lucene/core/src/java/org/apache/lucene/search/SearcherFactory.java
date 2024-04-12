@@ -37,7 +37,8 @@ import org.apache.lucene.search.similarities.Similarity; // javadocs
  *
  * <ul>
  *   <li>Setting a custom scoring model: {@link IndexSearcher#setSimilarity(Similarity)}
- *   <li>Parallel per-segment search: {@link IndexSearcher#IndexSearcher(IndexReader, Executor, Integer)}
+ *   <li>Parallel per-segment search: {@link IndexSearcher#IndexSearcher(IndexReader, Executor,
+ *       Integer)}
  *   <li>Return custom subclasses of IndexSearcher (for example that implement distributed scoring)
  *   <li>Run queries to warm your IndexSearcher before it is used. Note: when using near-realtime
  *       search you may want to also {@link

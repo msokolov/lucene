@@ -120,6 +120,7 @@ public class IndexSearcher {
    * executor is provided or not.
    */
   private final Supplier<LeafSlice[]> leafSlicesSupplier;
+
   private final Integer fixedSliceCount;
 
   // Used internally for load balancing threads executing for the query
@@ -221,10 +222,10 @@ public class IndexSearcher {
   }
 
   /**
-   * Creates a searcher searching the provided top-level {@link IndexReaderContext}. If fixedSliceCount
-   * is provided (not null), in which case an executor must also be provided, the searcher will execute
-   * queries concurrently over the specified number of equal-sized slices. These slices will generally span
-   * partial leaves.
+   * Creates a searcher searching the provided top-level {@link IndexReaderContext}. If
+   * fixedSliceCount is provided (not null), in which case an executor must also be provided, the
+   * searcher will execute queries concurrently over the specified number of equal-sized slices.
+   * These slices will generally span partial leaves.
    *
    * <p>Given a non-<code>null</code> {@link Executor} this method runs searches for each segment
    * separately, using the provided Executor. NOTE: if you are using {@link NIOFSDirectory}, do not
@@ -238,13 +239,14 @@ public class IndexSearcher {
    */
   public IndexSearcher(IndexReaderContext context, Executor executor, Integer fixedSliceCount) {
     assert context.isTopLevel
-            : "IndexSearcher's ReaderContext must be topLevel for reader " + context.reader();
+        : "IndexSearcher's ReaderContext must be topLevel for reader " + context.reader();
     if (fixedSliceCount != null && executor == null) {
-      throw new IllegalArgumentException("must provide an Executor when defining fixed-size slices");
+      throw new IllegalArgumentException(
+          "must provide an Executor when defining fixed-size slices");
     }
     reader = context.reader();
     this.taskExecutor =
-            executor == null ? new TaskExecutor(Runnable::run) : new TaskExecutor(executor);
+        executor == null ? new TaskExecutor(Runnable::run) : new TaskExecutor(executor);
     this.readerContext = context;
     leafContexts = context.leaves();
     this.fixedSliceCount = fixedSliceCount;
@@ -252,12 +254,12 @@ public class IndexSearcher {
       leafSlicesSupplier = new FixedSizeSliceSupplier(leafContexts, fixedSliceCount);
     } else {
       Function<List<LeafReaderContext>, LeafSlice[]> slicesProvider =
-              executor == null
-                      ? leaves ->
-                      leaves.isEmpty()
-                              ? new LeafSlice[0]
-                              : new LeafSlice[]{new LeafSlice(new ArrayList<>(leaves))}
-                      : this::slices;
+          executor == null
+              ? leaves ->
+                  leaves.isEmpty()
+                      ? new LeafSlice[0]
+                      : new LeafSlice[] {new LeafSlice(new ArrayList<>(leaves))}
+              : this::slices;
       leafSlicesSupplier = new CachingLeafSlicesSupplier(slicesProvider, leafContexts);
     }
   }
@@ -276,7 +278,7 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public IndexSearcher(IndexReaderContext context, Executor executor) {
-   this(context, executor, null);
+    this(context, executor, null);
   }
 
   /**
@@ -438,7 +440,8 @@ public class IndexSearcher {
         List<LeafReaderContext> sliceContexts = new ArrayList<>();
         int nextSliceStart = Math.min((i + 1) * sliceDocCount, maxDoc);
         while (intervalStart < nextSliceStart) {
-          //System.out.println("intervalStart=" + intervalStart + " nextSliceStart=" + nextSliceStart);
+          // System.out.println("intervalStart=" + intervalStart + " nextSliceStart=" +
+          // nextSliceStart);
           LeafReaderContext leaf = leafContexts.get(curLeaf);
           int leafMaxDoc = leaf.docBase + leaf.reader().maxDoc();
           int intervalEnd;
@@ -447,9 +450,10 @@ public class IndexSearcher {
           } else {
             intervalEnd = Math.min(leafMaxDoc, nextSliceStart);
           }
-          sliceContexts.add(leaf.createSubLeaf(intervalStart - leaf.docBase, intervalEnd - leaf.docBase));
+          sliceContexts.add(
+              leaf.createSubLeaf(intervalStart - leaf.docBase, intervalEnd - leaf.docBase));
           if (intervalEnd == leafMaxDoc) {
-            curLeaf ++;
+            curLeaf++;
           }
           intervalStart = intervalEnd;
         }
@@ -728,7 +732,8 @@ public class IndexSearcher {
     final C firstCollector = collectorManager.newCollector();
     if (fixedSliceCount != null) {
       // wrap the query in an IntervalQuery - this is a pass-through query with a
-      // delegate that creates Scorers that limit iteration to the interval defined in the LeafReaderContext
+      // delegate that creates Scorers that limit iteration to the interval defined in the
+      // LeafReaderContext
       query = new IntervalQuery(query);
     }
     query = rewrite(query, firstCollector.scoreMode().needsScores());
@@ -964,7 +969,6 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public static class LeafSlice {
-
 
     // public final Integer docMin, docMax;
 

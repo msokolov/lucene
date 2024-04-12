@@ -157,7 +157,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
 
-    IndexSearcher searcher = newSearcher(reader, true,  random().nextBoolean(), false);
+    IndexSearcher searcher = newSearcher(reader, true, random().nextBoolean(), false);
     Result result = searcher.search(query, new MaxFreqCollectorManager());
     assertEquals(
         "slop: " + slop + "  query: " + query + "  doc: " + doc + "  Wrong number of hits",

@@ -1,11 +1,10 @@
 package org.apache.lucene.search;
 
-import org.apache.lucene.index.LeafReaderContext;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
+import org.apache.lucene.index.LeafReaderContext;
 
 class IntervalQuery extends Query {
 
@@ -26,7 +25,8 @@ class IntervalQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     Weight inWeight = delegate.createWeight(searcher, scoreMode, boost);
     return new FilterWeight(inWeight) {
 
@@ -70,22 +70,25 @@ class IntervalQuery extends Query {
         }
       }
 
-      private class TwoPhaseScorer extends Scorer {
+      class TwoPhaseScorer extends Scorer {
         private final Scorer inScorer;
         private final TwoPhaseIterator twoPhase;
         private final DocIdSetIterator iterator;
         private final int intervalEnd;
 
-        TwoPhaseScorer(Scorer scorer, TwoPhaseIterator twoPhase, int intervalStart, int intervalEnd) {
+        TwoPhaseScorer(
+            Scorer scorer, TwoPhaseIterator twoPhase, int intervalStart, int intervalEnd) {
           super(scorer.weight);
-          DocIdSetIterator approx = new BoundedDocIdSetIterator(intervalStart, intervalEnd, twoPhase.approximation());
+          DocIdSetIterator approx =
+              new BoundedDocIdSetIterator(intervalStart, intervalEnd, twoPhase.approximation());
           this.twoPhase = createTwoPhase(twoPhase, approx);
           this.iterator = TwoPhaseIterator.asDocIdSetIterator(this.twoPhase);
           this.inScorer = scorer;
           this.intervalEnd = intervalEnd;
         }
 
-        private static TwoPhaseIterator createTwoPhase(TwoPhaseIterator twoPhase, DocIdSetIterator boundedApproximation) {
+        private static TwoPhaseIterator createTwoPhase(
+            TwoPhaseIterator twoPhase, DocIdSetIterator boundedApproximation) {
           return new TwoPhaseIterator(boundedApproximation) {
             @Override
             public boolean matches() throws IOException {
@@ -130,14 +133,15 @@ class IntervalQuery extends Query {
         }
       }
 
-      private class IntervalScorer extends Scorer {
+      class IntervalScorer extends Scorer {
         private final Scorer inScorer;
         private final DocIdSetIterator iterator;
         private final int intervalEnd;
 
         IntervalScorer(Scorer inScorer, int intervalStart, int intervalEnd) {
           super(inScorer.weight);
-          this.iterator = new BoundedDocIdSetIterator(intervalStart, intervalEnd, inScorer.iterator());
+          this.iterator =
+              new BoundedDocIdSetIterator(intervalStart, intervalEnd, inScorer.iterator());
           this.inScorer = inScorer;
           this.intervalEnd = intervalEnd;
         }
@@ -157,10 +161,12 @@ class IntervalQuery extends Query {
           return inScorer.score();
         }
 
+        @Override
         public TwoPhaseIterator twoPhaseIterator() {
           return null;
         }
 
+        @Override
         public int advanceShallow(int target) throws IOException {
           if (target >= intervalEnd) {
             return DocIdSetIterator.NO_MORE_DOCS;
@@ -178,7 +184,8 @@ class IntervalQuery extends Query {
         public Collection<ChildScorable> getChildren() throws IOException {
           return Collections.singleton(new ChildScorable(inScorer, "MUST"));
         }
-      };
+      }
+      ;
 
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
@@ -200,7 +207,7 @@ class IntervalQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-     if (!sameClassAs(obj)) {
+    if (!sameClassAs(obj)) {
       return false;
     }
     IntervalQuery that = (IntervalQuery) obj;
