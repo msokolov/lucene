@@ -199,7 +199,7 @@ public class TestAncientIndicesCompatibility extends LuceneTestCase {
       checker.setInfoStream(new PrintStream(bos, false, UTF_8));
       checker.setLevel(CheckIndex.Level.MIN_LEVEL_FOR_INTEGRITY_CHECKS);
       CheckIndex.Status indexStatus = checker.checkIndex();
-      if (getVersion(version).onOrAfter(Version.fromBits(8, 6, 0))) {
+      if (getVersion(version).onOrAfter(Version.fromBits(8, 0, 0))) {
         assertTrue(indexStatus.clean);
       } else {
         assertFalse(indexStatus.clean);
@@ -209,10 +209,9 @@ public class TestAncientIndicesCompatibility extends LuceneTestCase {
         boolean formatTooOld =
             bos.toString(UTF_8).contains(IndexFormatTooOldException.class.getName());
         boolean missingCodec = bos.toString(UTF_8).contains("Could not load codec");
-        assertTrue(formatTooOld || missingCodec);
+        assertTrue("version=" + version, formatTooOld || missingCodec);
       }
       checker.close();
-
       dir.close();
     }
   }
